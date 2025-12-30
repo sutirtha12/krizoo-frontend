@@ -1,69 +1,84 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import api from "../api/axiosInstance";
 
-/* ---------------- THUNKS ---------------- */
+/* ================= THUNKS ================= */
 
+/* CREATE RAZORPAY ORDER */
 export const createPaymentOrder = createAsyncThunk(
   "order/createPayment",
   async (amount, { rejectWithValue }) => {
     try {
       const res = await api.post("/payment/create-order", { amount });
-      return res.data.data;
-    } catch {
-      return rejectWithValue("Failed to create payment order");
+      return res.data.data; // razorpay order
+    } catch (err) {
+      return rejectWithValue(
+        err.response?.data?.message || "Failed to create payment order"
+      );
     }
   }
 );
 
+/* VERIFY ONLINE PAYMENT */
 export const verifyPayment = createAsyncThunk(
   "order/verify",
   async (payload, { rejectWithValue }) => {
     try {
-      await api.post("/payment/verify", payload);
-      return true;
-    } catch {
-      return rejectWithValue("Payment verification failed");
+      const res = await api.post("/payment/verify", payload);
+      return res.data.data; // ✅ CREATED ORDER
+    } catch (err) {
+      return rejectWithValue(
+        err.response?.data?.message || "Payment verification failed"
+      );
     }
   }
 );
 
+/* PLACE CASH ON DELIVERY ORDER */
 export const placeCOD = createAsyncThunk(
   "order/cod",
   async (payload, { rejectWithValue }) => {
     try {
-      await api.post("/payment/cod", payload);
-      return true;
-    } catch {
-      return rejectWithValue("COD order failed");
+      const res = await api.post("/payment/cod", payload);
+      return res.data.data; // ✅ CREATED ORDER
+    } catch (err) {
+      return rejectWithValue(
+        err.response?.data?.message || "COD order failed"
+      );
     }
   }
 );
 
+/* FETCH LOGGED-IN USER ORDERS */
 export const fetchMyOrders = createAsyncThunk(
   "order/myOrders",
   async (_, { rejectWithValue }) => {
     try {
       const res = await api.get("/api/my-orders");
       return res.data.data;
-    } catch {
-      return rejectWithValue("Failed to fetch orders");
+    } catch (err) {
+      return rejectWithValue(
+        err.response?.data?.message || "Failed to fetch orders"
+      );
     }
   }
 );
 
+/* CANCEL ORDER */
 export const cancelMyOrder = createAsyncThunk(
   "order/cancel",
   async (orderId, { rejectWithValue }) => {
     try {
       await api.put("/api/cancel-order", { orderId });
       return orderId;
-    } catch {
-      return rejectWithValue("Cancel failed");
+    } catch (err) {
+      return rejectWithValue(
+        err.response?.data?.message || "Cancel failed"
+      );
     }
   }
 );
 
-/* ---------------- SLICE ---------------- */
+/* ================= SLICE ================= */
 
 const orderSlice = createSlice({
   name: "order",
@@ -84,9 +99,11 @@ const orderSlice = createSlice({
   },
   extraReducers: builder => {
     builder
+
       /* CREATE PAYMENT ORDER */
       .addCase(createPaymentOrder.pending, state => {
         state.loading = true;
+        state.error = null;
       })
       .addCase(createPaymentOrder.fulfilled, (state, action) => {
         state.loading = false;
@@ -100,10 +117,12 @@ const orderSlice = createSlice({
       /* VERIFY PAYMENT */
       .addCase(verifyPayment.pending, state => {
         state.loading = true;
+        state.error = null;
       })
-      .addCase(verifyPayment.fulfilled, state => {
+      .addCase(verifyPayment.fulfilled, (state, action) => {
         state.loading = false;
         state.success = true;
+        state.myOrders.unshift(action.payload); // ✅ instant UI update
       })
       .addCase(verifyPayment.rejected, (state, action) => {
         state.loading = false;
@@ -113,10 +132,12 @@ const orderSlice = createSlice({
       /* COD */
       .addCase(placeCOD.pending, state => {
         state.loading = true;
+        state.error = null;
       })
-      .addCase(placeCOD.fulfilled, state => {
+      .addCase(placeCOD.fulfilled, (state, action) => {
         state.loading = false;
         state.success = true;
+        state.myOrders.unshift(action.payload); // ✅ instant UI update
       })
       .addCase(placeCOD.rejected, (state, action) => {
         state.loading = false;
@@ -126,6 +147,7 @@ const orderSlice = createSlice({
       /* FETCH MY ORDERS */
       .addCase(fetchMyOrders.pending, state => {
         state.loading = true;
+        state.error = null;
       })
       .addCase(fetchMyOrders.fulfilled, (state, action) => {
         state.loading = false;
@@ -136,13 +158,21 @@ const orderSlice = createSlice({
         state.error = action.payload;
       })
 
-      /* CANCEL ORDER (USES _id) */
+      /* CANCEL ORDER */
+      .addCase(cancelMyOrder.pending, state => {
+        state.loading = true;
+      })
       .addCase(cancelMyOrder.fulfilled, (state, action) => {
-        state.myOrders = state.myOrders.map(o =>
-          o._id === action.payload
-            ? { ...o, status: "CANCELLED" }
-            : o
+        state.loading = false;
+        state.myOrders = state.myOrders.map(order =>
+          order._id === action.payload
+            ? { ...order, status: "CANCELLED" }
+            : order
         );
+      })
+      .addCase(cancelMyOrder.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
       });
   }
 });
