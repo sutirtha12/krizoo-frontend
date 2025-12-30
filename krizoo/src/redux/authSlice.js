@@ -9,10 +9,7 @@ export const signupUser = createAsyncThunk(
   async (formData, { rejectWithValue }) => {
     try {
       const res = await api.post("/api/signup", formData);
-      return {
-        user: res.data.data,
-        token: res.data.token
-      };
+      return res.data.data;
     } catch (err) {
       return rejectWithValue(
         err.response?.data?.message || "Signup failed"
@@ -27,10 +24,7 @@ export const loginUser = createAsyncThunk(
   async (formData, { rejectWithValue }) => {
     try {
       const res = await api.post("/api/login", formData);
-      return {
-        user: res.data.data,
-        token: res.data.token
-      };
+      return res.data.data; // cookie set by backend
     } catch (err) {
       return rejectWithValue(
         err.response?.data?.message || "Login failed"
@@ -39,10 +33,24 @@ export const loginUser = createAsyncThunk(
   }
 );
 
-// LOGOUT (CLIENT SIDE ONLY)
+// 🔥 LOAD USER FROM COOKIE (ON RELOAD)
+export const checkAuth = createAsyncThunk(
+  "auth/checkAuth",
+  async (_, { rejectWithValue }) => {
+    try {
+      const res = await api.get("/api/me");
+      return res.data.data;
+    } catch {
+      return rejectWithValue(null);
+    }
+  }
+);
+
+// LOGOUT
 export const logoutUser = createAsyncThunk(
   "auth/logout",
   async () => {
+    await api.post("/api/logout");
     return true;
   }
 );
@@ -53,9 +61,8 @@ const authSlice = createSlice({
   name: "auth",
   initialState: {
     user: null,
-    token: null,
     isAuthenticated: false,
-    loading: false,
+    loading: true,   // 🔥 IMPORTANT
     error: null
   },
   reducers: {},
@@ -69,8 +76,7 @@ const authSlice = createSlice({
       })
       .addCase(loginUser.fulfilled, (state, action) => {
         state.loading = false;
-        state.user = action.payload.user;
-        state.token = action.payload.token;
+        state.user = action.payload;
         state.isAuthenticated = true;
       })
       .addCase(loginUser.rejected, (state, action) => {
@@ -80,28 +86,31 @@ const authSlice = createSlice({
       })
 
       /* SIGNUP */
-      .addCase(signupUser.pending, state => {
-        state.loading = true;
-        state.error = null;
-      })
       .addCase(signupUser.fulfilled, (state, action) => {
+        state.user = action.payload;
+        state.isAuthenticated = true;
         state.loading = false;
-        state.user = action.payload.user;
-        state.token = action.payload.token;
+      })
+
+      /* CHECK AUTH (REHYDRATE) */
+      .addCase(checkAuth.pending, state => {
+        state.loading = true;
+      })
+      .addCase(checkAuth.fulfilled, (state, action) => {
+        state.loading = false;
+        state.user = action.payload;
         state.isAuthenticated = true;
       })
-      .addCase(signupUser.rejected, (state, action) => {
+      .addCase(checkAuth.rejected, state => {
         state.loading = false;
-        state.error = action.payload;
+        state.user = null;
         state.isAuthenticated = false;
       })
 
       /* LOGOUT */
       .addCase(logoutUser.fulfilled, state => {
         state.user = null;
-        state.token = null;
         state.isAuthenticated = false;
-        state.error = null;
       });
   }
 });
