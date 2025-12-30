@@ -9,7 +9,9 @@ export const signupUser = createAsyncThunk(
   async (formData, { rejectWithValue }) => {
     try {
       const res = await api.post("/api/signup", formData);
-      return res.data.data;
+      return {user:res.data.data,
+        token: res.data.token 
+      }
     } catch (err) {
       return rejectWithValue(
         err.response?.data?.message || "Signup failed"
@@ -24,7 +26,10 @@ export const loginUser = createAsyncThunk(
   async (formData, { rejectWithValue }) => {
     try {
       const res = await api.post("/api/login", formData);
-      return res.data.data; // cookie set by backend
+      return{user:res.data.data,
+        token: res.data.token 
+      } 
+      
     } catch (err) {
       return rejectWithValue(
         err.response?.data?.message || "Login failed"
@@ -62,6 +67,7 @@ const authSlice = createSlice({
   initialState: {
     user: null,
     isAuthenticated: false,
+    token:null,
     loading: true,   // 🔥 IMPORTANT
     error: null
   },
@@ -77,6 +83,7 @@ const authSlice = createSlice({
       .addCase(loginUser.fulfilled, (state, action) => {
         state.loading = false;
         state.user = action.payload;
+        state.token=action.payload.token;
         state.isAuthenticated = true;
       })
       .addCase(loginUser.rejected, (state, action) => {
@@ -90,6 +97,7 @@ const authSlice = createSlice({
         state.user = action.payload;
         state.isAuthenticated = true;
         state.loading = false;
+        state.token=action.payload.token;
       })
 
       /* CHECK AUTH (REHYDRATE) */
