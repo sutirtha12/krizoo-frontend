@@ -7,12 +7,16 @@ const HomeProducts = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  const { items, loading } = useSelector(state => state.products);
+  // ✅ SAFE SELECTOR
+  const { items = [], loading = false } = useSelector(
+    state => state.products || {}
+  );
 
   useEffect(() => {
     dispatch(fetchProducts());
   }, [dispatch]);
 
+  // ✅ LOADING STATE
   if (loading) {
     return (
       <div className="text-center py-20 tracking-widest">
@@ -21,8 +25,21 @@ const HomeProducts = () => {
     );
   }
 
-  // ✅ VERY IMPORTANT
-  const safeItems = items.filter((item, idx) => idx <= 5);
+  // ✅ SAFE DATA NORMALIZATION
+  const safeItems = Array.isArray(items)
+    ? items
+        .filter(item => item?.product) // product must exist
+        .slice(0, 6) // show only first 6
+    : [];
+
+  // ✅ EMPTY STATE
+  if (safeItems.length === 0) {
+    return (
+      <div className="text-center py-20 tracking-widest opacity-60">
+        NO PRODUCTS AVAILABLE
+      </div>
+    );
+  }
 
   return (
     <section className="max-w-7xl mx-auto px-4 sm:px-6 py-20 sm:py-24">
@@ -49,7 +66,12 @@ const HomeProducts = () => {
       >
         {safeItems.map(item => {
           const product = item.product;
-          const image = item.images?.[0]?.url || "/placeholder.jpg";
+          if (!product) return null;
+
+          const image =
+            item.images?.[0]?.url ||
+            product.thumbnail ||
+            "/placeholder.jpg";
 
           return (
             <div
@@ -78,7 +100,7 @@ const HomeProducts = () => {
               >
                 <img
                   src={image}
-                  alt={product.name}
+                  alt={product.name || "Product"}
                   className="
                     w-full h-full
                     object-cover object-top
@@ -98,7 +120,7 @@ const HomeProducts = () => {
                     line-clamp-2
                   "
                 >
-                  {product.name}
+                  {product.name || "Unnamed Product"}
                 </h3>
 
                 <p
@@ -109,15 +131,15 @@ const HomeProducts = () => {
                     uppercase
                   "
                 >
-                  {product.category.replace("-", " ")}
+                  {product.category?.replace("-", " ") || ""}
                 </p>
 
                 <div className="mt-3 flex items-center justify-between">
                   <span className="text-sm sm:text-base font-semibold">
-                    ₹{product.discountedPrice || product.price}
+                    ₹{product.discountedPrice ?? product.price ?? "—"}
                   </span>
 
-                  {product.discountedPrice && (
+                  {product.discountedPrice && product.price && (
                     <span className="text-[10px] sm:text-xs line-through opacity-50">
                       ₹{product.price}
                     </span>

@@ -64,5 +64,11 @@ export const reviews = [
     location: "Indore",
     rating: 4,
     text: "After multiple washes, fabric still feels new. Worth the price."
+  },
+  {
+    name:"ramit saha",
+    location:"dehradun",
+    rate:5,
+    text:"the fabric quality is crazy amazing"
   }
 ];
