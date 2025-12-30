@@ -189,7 +189,30 @@ const Navbar = () => {
                   {p.replace("/", "").toUpperCase()}
                 </Link>
               ))}
-
+              {accountOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="
+                      absolute right-0 top-12 w-48
+                      bg-white/10 backdrop-blur-xl
+                      rounded-xl overflow-hidden
+                    "
+                  >
+                    <Link to="/myprofile" onClick={closeAll} className="block px-4 py-3">
+                      My Profile
+                    </Link>
+                    <Link to="/myorders" onClick={closeAll} className="block px-4 py-3">
+                      My Orders
+                    </Link>
+                    </motion.div>
+              )}
+                {isAdmin && (
+                      <Link to="/admin" onClick={closeAll} className="block px-4 py-3 text-red-400">
+                        Admin Dashboard
+                      </Link>
+                    )}
               {!isAuthenticated ? (
                 <Link to="/login" onClick={closeAll}>LOGIN / SIGNUP</Link>
               ) : (
