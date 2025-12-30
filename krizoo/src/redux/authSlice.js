@@ -9,6 +9,9 @@ export const signupUser = createAsyncThunk(
   async (formData, { rejectWithValue }) => {
     try {
       const res = await api.post("/api/signup", formData);
+
+      localStorage.setItem("token", res.data.token);
+
       return res.data.data;
     } catch (err) {
       return rejectWithValue(
@@ -24,7 +27,11 @@ export const loginUser = createAsyncThunk(
   async (formData, { rejectWithValue }) => {
     try {
       const res = await api.post("/api/login", formData);
-      return res.data.data; // cookie set by backend
+
+      // 🔑 SAVE TOKEN
+      localStorage.setItem("token", res.data.token);
+
+      return res.data.data;
     } catch (err) {
       return rejectWithValue(
         err.response?.data?.message || "Login failed"
@@ -33,7 +40,7 @@ export const loginUser = createAsyncThunk(
   }
 );
 
-// 🔥 LOAD USER FROM COOKIE (ON RELOAD)
+// 🔥 LOAD USER 
 export const checkAuth = createAsyncThunk(
   "auth/checkAuth",
   async (_, { rejectWithValue }) => {
@@ -50,7 +57,7 @@ export const checkAuth = createAsyncThunk(
 export const logoutUser = createAsyncThunk(
   "auth/logout",
   async () => {
-    await api.post("/api/logout");
+    localStorage.removeItem("token");
     return true;
   }
 );
