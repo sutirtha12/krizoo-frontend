@@ -4,6 +4,7 @@ import { FiMenu, FiX, FiShoppingBag, FiUpload } from "react-icons/fi";
 import { useDispatch, useSelector } from "react-redux";
 import { logoutUser } from "../redux/authSlice";
 import { motion, AnimatePresence } from "framer-motion";
+import logo from "../media/kz-logo1.png"
 
 const Navbar = () => {
   const dispatch = useDispatch();
@@ -69,7 +70,7 @@ const Navbar = () => {
           to="/"
           className="absolute left-1/2 -translate-x-1/2 font-brand text-2xl tracking-widest"
         >
-          KRIZOO
+          <img src={logo} alt="" />
         </Link>
 
         {/* RIGHT */}
@@ -150,7 +151,7 @@ const Navbar = () => {
         </button>
 
         <Link to="/" onClick={closeAll} className="font-brand text-xl">
-          KRIZOO
+          <img src={logo} alt="" />
         </Link>
 
         <Link to="/cart" onClick={closeAll} className="relative">
