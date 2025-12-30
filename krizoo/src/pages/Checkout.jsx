@@ -92,21 +92,26 @@ function Checkout() {
 
   /* ================= PAY ONLINE ================= */
   const payOnline = async () => {
-    if (!isShippingValid) {
-      alert("Fill all shipping details");
-      return;
-    }
+  if (!isShippingValid) {
+    alert("Fill all shipping details");
+    return;
+  }
 
+  try {
+    // 1️⃣ Create Razorpay order on backend
     const order = await dispatch(
       createPaymentOrder(total)
     ).unwrap();
 
+    const { key, orderId, amount, currency } = order;
+
+    // 2️⃣ Open Razorpay checkout
     const options = {
-      key: import.meta.env.VITE_RAZORPAY_KEY,
-      amount: order.amount,
-      currency: "INR",
+      key, // ✅ FROM BACKEND
+      amount,
+      currency,
       name: "KRIZOO",
-      order_id: order.id,
+      order_id: orderId,
       handler: async (response) => {
         await dispatch(
           verifyPayment({
@@ -122,8 +127,10 @@ function Checkout() {
     };
 
     new window.Razorpay(options).open();
-  };
-
+  } catch (err) {
+    alert("Payment initiation failed");
+  }
+};
   /* ================= COD ================= */
   const payCOD = async () => {
     if (!isShippingValid) {
