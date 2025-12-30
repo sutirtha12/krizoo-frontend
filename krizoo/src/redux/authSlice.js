@@ -23,7 +23,7 @@ export const loginUser = createAsyncThunk(
   "auth/login",
   async (formData, { rejectWithValue }) => {
     try {
-      const res = await api.post("/api/login", formData);
+      const res = await axios.post('api/login', formData, { withCredentials: true });
       return res.data.data; // cookie set by backend
     } catch (err) {
       return rejectWithValue(
