@@ -70,7 +70,8 @@ const Navbar = () => {
           to="/"
           className="absolute left-1/2 -translate-x-1/2 font-brand text-2xl tracking-widest"
         >
-          <img src={logo} alt="" />
+          <img src={logo} alt="Krizoo"
+  className="h-8 w-auto object-contain"/>
         </Link>
 
         {/* RIGHT */}
@@ -151,7 +152,8 @@ const Navbar = () => {
         </button>
 
         <Link to="/" onClick={closeAll} className="font-brand text-xl">
-          <img src={logo} alt="" />
+          <img src={logo} alt="Krizoo"
+  className="h-8 w-auto object-contain"/>
         </Link>
 
         <Link to="/cart" onClick={closeAll} className="relative">
