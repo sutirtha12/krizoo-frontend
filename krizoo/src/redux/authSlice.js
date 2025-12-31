@@ -11,6 +11,7 @@ export const signupUser = createAsyncThunk(
       const res = await api.post("/api/signup", formData);
 
       localStorage.setItem("token", res.data.token);
+      localStorage.setItem("user", JSON.stringify(res.data.data));
 
       return res.data.data;
     } catch (err) {
@@ -28,8 +29,8 @@ export const loginUser = createAsyncThunk(
     try {
       const res = await api.post("/api/login", formData);
 
-      // 🔑 SAVE TOKEN
       localStorage.setItem("token", res.data.token);
+      localStorage.setItem("user", JSON.stringify(res.data.data));
 
       return res.data.data;
     } catch (err) {
@@ -40,36 +41,26 @@ export const loginUser = createAsyncThunk(
   }
 );
 
-// 🔥 LOAD USER 
-export const checkAuth = createAsyncThunk(
-  "auth/checkAuth",
-  async (_, { rejectWithValue }) => {
-    try {
-      const res = await api.get("/api/me");
-      return res.data.data;
-    } catch {
-      return rejectWithValue(null);
-    }
-  }
-);
-
 // LOGOUT
 export const logoutUser = createAsyncThunk(
   "auth/logout",
   async () => {
     localStorage.removeItem("token");
+    localStorage.removeItem("user");
     return true;
   }
 );
 
-/* ================= SLICE ================= */
+/* ================= INITIAL STATE ================= */
+
+const storedUser = localStorage.getItem("user");
 
 const authSlice = createSlice({
   name: "auth",
   initialState: {
-    user: null,
-    isAuthenticated: false,
-    loading: true,   // 🔥 IMPORTANT
+    user: storedUser ? JSON.parse(storedUser) : null,
+    isAuthenticated: !!localStorage.getItem("token"),
+    loading: false,
     error: null
   },
   reducers: {},
@@ -93,25 +84,17 @@ const authSlice = createSlice({
       })
 
       /* SIGNUP */
-      .addCase(signupUser.fulfilled, (state, action) => {
-        state.user = action.payload;
-        state.isAuthenticated = true;
-        state.loading = false;
-      })
-
-      /* CHECK AUTH (REHYDRATE) */
-      .addCase(checkAuth.pending, state => {
+      .addCase(signupUser.pending, state => {
         state.loading = true;
       })
-      .addCase(checkAuth.fulfilled, (state, action) => {
+      .addCase(signupUser.fulfilled, (state, action) => {
         state.loading = false;
         state.user = action.payload;
         state.isAuthenticated = true;
       })
-      .addCase(checkAuth.rejected, state => {
+      .addCase(signupUser.rejected, (state, action) => {
         state.loading = false;
-        state.user = null;
-        state.isAuthenticated = false;
+        state.error = action.payload;
       })
 
       /* LOGOUT */

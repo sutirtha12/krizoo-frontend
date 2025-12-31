@@ -1,7 +1,5 @@
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
-import { useEffect , useState } from "react";
-import { useDispatch } from "react-redux";
-import { checkAuth } from "./redux/authSlice";
+import { useState } from "react";
 
 /* PUBLIC COMPONENTS */
 import Navbar from "./components/Navbar";
@@ -35,21 +33,14 @@ import AuthLoader from "./components/AuthLoader";
 
 /* ---------------- WRAPPER ---------------- */
 function AppContent() {
-  const dispatch = useDispatch();
   const location = useLocation();
-
   const isAdminRoute = location.pathname.startsWith("/admin");
-
-  useEffect(() => {
-    dispatch(checkAuth());
-  }, [dispatch]);
 
   return (
     <>
-      {/* PUBLIC NAVBAR */}
       {!isAdminRoute && <Navbar />}
-<ScrollToTop/>
-      {/* PAGE CONTENT */}
+      <ScrollToTop />
+
       <div className={!isAdminRoute ? "pt-24" : ""}>
         <Routes>
           {/* PUBLIC ROUTES */}
@@ -67,7 +58,6 @@ function AppContent() {
           <Route path="/product/:id" element={<ProductDetail />} />
           <Route path="/myprofile" element={<MyProfile />} />
           <Route path="/myorders" element={<MyOrders />} />
-          
 
           {/* ADMIN ROUTES */}
           <Route path="/admin" element={<AdminLayout />}>
@@ -80,7 +70,6 @@ function AppContent() {
         </Routes>
       </div>
 
-      {/* PUBLIC FOOTER */}
       {!isAdminRoute && <Footer />}
     </>
   );
@@ -91,16 +80,11 @@ export default function App() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 1700); // ⏱️ 2.5 seconds
-
+    const timer = setTimeout(() => setLoading(false), 1700);
     return () => clearTimeout(timer);
   }, []);
 
-  if (loading) {
-    return <AuthLoader />;
-  }
+  if (loading) return <AuthLoader />;
 
   return (
     <BrowserRouter>
