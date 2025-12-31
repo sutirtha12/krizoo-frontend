@@ -28,7 +28,9 @@ export const loginUser = createAsyncThunk(
   async (formData, { rejectWithValue }) => {
     try {
       const res = await api.post("/api/login", formData);
-
+      console.log("FULL LOGIN RESPONSE:", res.data);
+      console.log("TOKEN:", res.data.token);
+      console.log("USER:", res.data.data);
       localStorage.setItem("token", res.data.token);
       localStorage.setItem("user", JSON.stringify(res.data.data));
 
