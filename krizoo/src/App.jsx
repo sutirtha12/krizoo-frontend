@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
-import { useState } from "react";
+import { useState , useEffect} from "react";
 
 /* PUBLIC COMPONENTS */
 import Navbar from "./components/Navbar";
