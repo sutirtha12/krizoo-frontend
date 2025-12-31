@@ -10,6 +10,7 @@ api.interceptors.request.use(
     const token = localStorage.getItem("token");
 
     if (token) {
+      config.headers = config.headers || {};
       config.headers.Authorization = `Bearer ${token}`;
     }
 
@@ -18,13 +19,10 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+// ❌ DO NOT auto-delete token on 401
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      // Only remove token, DO NOT redirect here
-      localStorage.removeItem("token");
-    }
     return Promise.reject(error);
   }
 );
