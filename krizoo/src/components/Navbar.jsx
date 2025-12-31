@@ -1,13 +1,16 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { FiMenu, FiX, FiShoppingBag, FiUpload } from "react-icons/fi";
 import { useDispatch, useSelector } from "react-redux";
 import { logoutUser } from "../redux/authSlice";
+import { clearCart } from "../redux/cartSlice";
 import { motion, AnimatePresence } from "framer-motion";
-import logo from "../media/kz-logo1.png"
+import logo from "../media/kz-logo1.png";
 
 const Navbar = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const { isAuthenticated, user, loading } = useSelector(state => state.auth);
   const { cart } = useSelector(state => state.cart);
@@ -26,12 +29,19 @@ const Navbar = () => {
     setAccountOpen(false);
   };
 
+  // 🔥 Auto close menus on route change
+  useEffect(() => {
+    closeAll();
+  }, [location.pathname]);
+
+  // 🔥 Logout = clear auth + cart + redirect
   const logoutHandler = () => {
     dispatch(logoutUser());
+    dispatch(clearCart());
     closeAll();
+    navigate("/");
   };
 
-  // 🔥 PREVENT FLICKER ON RELOAD
   if (loading) return null;
 
   return (
@@ -51,7 +61,6 @@ const Navbar = () => {
       {/* ================= DESKTOP ================= */}
       <div className="hidden md:flex items-center justify-between">
 
-        {/* LEFT */}
         <div className="flex gap-8 text-sm tracking-widest">
           <Link to="/male">MALE</Link>
           <Link to="/female">FEMALE</Link>
@@ -65,36 +74,22 @@ const Navbar = () => {
           )}
         </div>
 
-        {/* LOGO */}
-        <Link
-          to="/"
-          className="absolute left-1/2 -translate-x-1/2 font-brand text-2xl tracking-widest"
-        >
-          <img src={logo} alt="Krizoo"
-  className="h-8 w-auto object-contain"/>
+        <Link to="/" className="absolute left-1/2 -translate-x-1/2">
+          <img src={logo} alt="Krizoo" className="h-8 w-auto object-contain" />
         </Link>
 
-        {/* RIGHT */}
         <div className="flex items-center gap-4 relative">
           <Link to="/cart" className="relative p-2 rounded-full bg-white/10">
             <FiShoppingBag size={18} />
             {cartCount > 0 && (
-              <span className="
-                absolute -top-1 -right-1
-                w-5 h-5 bg-white text-black
-                text-[10px] font-bold rounded-full
-                flex items-center justify-center
-              ">
+              <span className="absolute -top-1 -right-1 w-5 h-5 bg-white text-black text-[10px] font-bold rounded-full flex items-center justify-center">
                 {cartCount}
               </span>
             )}
           </Link>
 
           {!isAuthenticated ? (
-            <Link
-              to="/login"
-              className="px-6 py-2 rounded-full bg-white/15 text-xs"
-            >
+            <Link to="/login" className="px-6 py-2 rounded-full bg-white/15 text-xs">
               LOGIN / SIGNUP
             </Link>
           ) : (
@@ -112,25 +107,15 @@ const Navbar = () => {
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
-                    className="
-                      absolute right-0 top-12 w-48
-                      bg-white/10 backdrop-blur-xl
-                      rounded-xl overflow-hidden
-                    "
+                    className="absolute right-0 top-12 w-48 bg-white/10 backdrop-blur-xl rounded-xl overflow-hidden"
                   >
-                    <Link to="/myprofile" onClick={closeAll} className="block px-4 py-3">
-                      My Profile
-                    </Link>
-                    <Link to="/myorders" onClick={closeAll} className="block px-4 py-3">
-                      My Orders
-                    </Link>
-
+                    <Link to="/myprofile" className="block px-4 py-3">My Profile</Link>
+                    <Link to="/myorders" className="block px-4 py-3">My Orders</Link>
                     {isAdmin && (
-                      <Link to="/admin" onClick={closeAll} className="block px-4 py-3 text-red-400">
+                      <Link to="/admin" className="block px-4 py-3 text-red-400">
                         Admin Dashboard
                       </Link>
                     )}
-
                     <button
                       onClick={logoutHandler}
                       className="w-full text-left px-4 py-3 text-red-400"
@@ -151,21 +136,14 @@ const Navbar = () => {
           <FiMenu size={22} />
         </button>
 
-        <Link to="/" onClick={closeAll} className="font-brand text-xl">
-          <img src={logo} alt="Krizoo"
-  className="h-8 w-auto object-contain"/>
+        <Link to="/" onClick={closeAll}>
+          <img src={logo} alt="Krizoo" className="h-8 w-auto object-contain" />
         </Link>
 
         <Link to="/cart" onClick={closeAll} className="relative">
           <FiShoppingBag size={20} />
           {cartCount > 0 && (
-            <span className="
-              absolute -top-2 -right-3
-              min-w-[20px] h-[20px]
-              bg-white text-black text-[11px]
-              font-bold rounded-full
-              flex items-center justify-center
-            ">
+            <span className="absolute -top-2 -right-3 min-w-[20px] h-[20px] bg-white text-black text-[11px] font-bold rounded-full flex items-center justify-center">
               {cartCount}
             </span>
           )}
@@ -187,35 +165,18 @@ const Navbar = () => {
             </div>
 
             <div className="flex flex-col gap-6 text-sm tracking-widest">
-              {["/male","/female","/contact","/about"].map(p => (
+              {["/male", "/female", "/contact", "/about"].map(p => (
                 <Link key={p} to={p} onClick={closeAll}>
                   {p.replace("/", "").toUpperCase()}
                 </Link>
               ))}
-              {accountOpen && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    className="
-                      absolute right-0 top-12 w-48
-                      bg-white/10 backdrop-blur-xl
-                      rounded-xl overflow-hidden
-                    "
-                  >
-                    <Link to="/myprofile" onClick={closeAll} className="block px-4 py-3">
-                      My Profile
-                    </Link>
-                    <Link to="/myorders" onClick={closeAll} className="block px-4 py-3">
-                      My Orders
-                    </Link>
-                    </motion.div>
+
+              {isAdmin && (
+                <Link to="/admin" onClick={closeAll} className="text-red-400">
+                  ADMIN DASHBOARD
+                </Link>
               )}
-                {isAdmin && (
-                      <Link to="/admin" onClick={closeAll} className="block px-4 py-3 text-red-400">
-                        Admin Dashboard
-                      </Link>
-                    )}
+
               {!isAuthenticated ? (
                 <Link to="/login" onClick={closeAll}>LOGIN / SIGNUP</Link>
               ) : (

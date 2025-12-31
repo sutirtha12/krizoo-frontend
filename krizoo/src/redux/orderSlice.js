@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import api from "../api/axiosInstance";
+import { clearCart } from "./cartSlice";
 
 /* ================= THUNKS ================= */
 
@@ -9,7 +10,7 @@ export const createPaymentOrder = createAsyncThunk(
   async (amount, { rejectWithValue }) => {
     try {
       const res = await api.post("/payment/create-order", { amount });
-      return res.data.data; // razorpay order
+      return res.data.data;
     } catch (err) {
       return rejectWithValue(
         err.response?.data?.message || "Failed to create payment order"
@@ -21,10 +22,14 @@ export const createPaymentOrder = createAsyncThunk(
 /* VERIFY ONLINE PAYMENT */
 export const verifyPayment = createAsyncThunk(
   "order/verify",
-  async (payload, { rejectWithValue }) => {
+  async (payload, { dispatch, rejectWithValue }) => {
     try {
       const res = await api.post("/payment/verify", payload);
-      return res.data.data; // ✅ CREATED ORDER
+
+      // 🔥 clear cart after successful order
+      dispatch(clearCart());
+
+      return res.data.data; // created order
     } catch (err) {
       return rejectWithValue(
         err.response?.data?.message || "Payment verification failed"
@@ -36,10 +41,14 @@ export const verifyPayment = createAsyncThunk(
 /* PLACE CASH ON DELIVERY ORDER */
 export const placeCOD = createAsyncThunk(
   "order/cod",
-  async (payload, { rejectWithValue }) => {
+  async (payload, { dispatch, rejectWithValue }) => {
     try {
       const res = await api.post("/payment/cod", payload);
-      return res.data.data; // ✅ CREATED ORDER
+
+      // 🔥 clear cart after successful order
+      dispatch(clearCart());
+
+      return res.data.data; // created order
     } catch (err) {
       return rejectWithValue(
         err.response?.data?.message || "COD order failed"
@@ -90,7 +99,7 @@ const orderSlice = createSlice({
     myOrders: []
   },
   reducers: {
-    resetOrderState: state => {
+    resetOrderState: (state) => {
       state.loading = false;
       state.error = null;
       state.success = false;
@@ -122,14 +131,14 @@ const orderSlice = createSlice({
       .addCase(verifyPayment.fulfilled, (state, action) => {
         state.loading = false;
         state.success = true;
-        state.myOrders.unshift(action.payload); // ✅ instant UI update
+        state.myOrders.unshift(action.payload); // instant UI
       })
       .addCase(verifyPayment.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })
 
-      /* COD */
+      /* CASH ON DELIVERY */
       .addCase(placeCOD.pending, state => {
         state.loading = true;
         state.error = null;
@@ -137,7 +146,7 @@ const orderSlice = createSlice({
       .addCase(placeCOD.fulfilled, (state, action) => {
         state.loading = false;
         state.success = true;
-        state.myOrders.unshift(action.payload); // ✅ instant UI update
+        state.myOrders.unshift(action.payload); // instant UI
       })
       .addCase(placeCOD.rejected, (state, action) => {
         state.loading = false;

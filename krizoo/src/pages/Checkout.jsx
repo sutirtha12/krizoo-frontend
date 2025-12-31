@@ -8,23 +8,33 @@ import {
   placeCOD
 } from "../redux/orderSlice";
 
-import { fetchCart } from "../redux/cartSlice";
+import { fetchCart, clearCart } from "../redux/cartSlice";
 import ShippingForm from "../components/ShippingForm";
 
 function Checkout() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  /* ================= GLOBAL STATE ================= */
+  /* ================= AUTH ================= */
+  const { isAuthenticated } = useSelector(state => state.auth);
+
+  /* 🔒 Block checkout if not logged in */
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate("/login");
+    }
+  }, [isAuthenticated, navigate]);
+
+  /* ================= CART ================= */
   const { cart } = useSelector(state => state.cart);
   const items = Array.isArray(cart?.items) ? cart.items : [];
 
-  /* ================= FETCH CART ON LOAD ================= */
+  /* ================= FETCH CART ================= */
   useEffect(() => {
     dispatch(fetchCart());
   }, [dispatch]);
 
-  /* ================= SHIPPING STATE (ALWAYS FIRST) ================= */
+  /* ================= SHIPPING ================= */
   const [shipping, setShipping] = useState({
     firstname: "",
     lastname: "",
@@ -55,7 +65,7 @@ function Checkout() {
 
   const total = Math.max(subtotal - discount, 0);
 
-  /* ================= EMPTY CART (AFTER HOOKS) ================= */
+  /* ================= EMPTY CART ================= */
   if (!items.length) {
     return (
       <section className="max-w-5xl mx-auto px-6 py-32 text-center">
@@ -92,45 +102,46 @@ function Checkout() {
 
   /* ================= PAY ONLINE ================= */
   const payOnline = async () => {
-  if (!isShippingValid) {
-    alert("Fill all shipping details");
-    return;
-  }
+    if (!isShippingValid) {
+      alert("Fill all shipping details");
+      return;
+    }
 
-  try {
-    // 1️⃣ Create Razorpay order on backend
-    const order = await dispatch(
-      createPaymentOrder(total)
-    ).unwrap();
+    try {
+      const order = await dispatch(
+        createPaymentOrder(total)
+      ).unwrap();
 
-    const { key, orderId, amount, currency } = order;
+      const { key, orderId, amount, currency } = order;
 
-    // 2️⃣ Open Razorpay checkout
-    const options = {
-      key, // ✅ FROM BACKEND
-      amount,
-      currency,
-      name: "KRIZOO",
-      order_id: orderId,
-      handler: async (response) => {
-        await dispatch(
-          verifyPayment({
-            ...response,
-            amount: total,
-            discount,
-            shippingDetails: shipping
-          })
-        );
-        navigate("/thankyou");
-      },
-      theme: { color: "#000000" }
-    };
+      const options = {
+        key,
+        amount,
+        currency,
+        name: "KRIZOO",
+        order_id: orderId,
+        handler: async (response) => {
+          await dispatch(
+            verifyPayment({
+              ...response,
+              amount: total,
+              discount,
+              shippingDetails: shipping
+            })
+          );
 
-    new window.Razorpay(options).open();
-  } catch (err) {
-    alert("Payment initiation failed");
-  }
-};
+          dispatch(clearCart()); // 🔥 CLEAR CART
+          navigate("/thankyou");
+        },
+        theme: { color: "#000000" }
+      };
+
+      new window.Razorpay(options).open();
+    } catch {
+      alert("Payment initiation failed");
+    }
+  };
+
   /* ================= COD ================= */
   const payCOD = async () => {
     if (!isShippingValid) {
@@ -138,15 +149,20 @@ function Checkout() {
       return;
     }
 
-    await dispatch(
-      placeCOD({
-        amount: total,
-        discount,
-        shippingDetails: shipping
-      })
-    );
+    try {
+      await dispatch(
+        placeCOD({
+          amount: total,
+          discount,
+          shippingDetails: shipping
+        })
+      ).unwrap();
 
-    navigate("/thankyou");
+      dispatch(clearCart()); // 🔥 CLEAR CART
+      navigate("/thankyou");
+    } catch {
+      alert("COD order failed");
+    }
   };
 
   /* ================= UI ================= */
@@ -156,13 +172,8 @@ function Checkout() {
         CHECKOUT
       </h1>
 
-      {/* SHIPPING */}
-      <ShippingForm
-        shipping={shipping}
-        setShipping={setShipping}
-      />
+      <ShippingForm shipping={shipping} setShipping={setShipping} />
 
-      {/* SUMMARY */}
       <div className="bg-white/5 p-6 rounded-2xl mb-10">
         {items.map(item => (
           <div key={item._id} className="flex justify-between mb-3">
@@ -195,7 +206,6 @@ function Checkout() {
         </div>
       </div>
 
-      {/* OFFERS */}
       <div className="grid md:grid-cols-3 gap-4 mb-10">
         <button onClick={() => applyOffer("PREPAID")} className="p-4 bg-white/10 rounded-xl">
           💳 PREPAID<br />₹200 OFF
@@ -208,7 +218,6 @@ function Checkout() {
         </button>
       </div>
 
-      {/* PAY */}
       <div className="grid gap-4">
         <button
           onClick={payOnline}
