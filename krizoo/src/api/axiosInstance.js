@@ -1,4 +1,3 @@
-// src/api/axiosInstance.js
 import axios from "axios";
 
 const api = axios.create({
@@ -19,12 +18,10 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// ❌ DO NOT auto-delete token on 401
+// ✅ Do NOT auto-remove token on 401
 api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    return Promise.reject(error);
-  }
+  response => response,
+  error => Promise.reject(error)
 );
 
 export default api;

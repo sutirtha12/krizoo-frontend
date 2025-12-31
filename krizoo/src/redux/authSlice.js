@@ -10,13 +10,17 @@ export const signupUser = createAsyncThunk(
     try {
       const res = await api.post("/api/signup", formData);
 
+      if (!res.data?.token || !res.data?.data) {
+        throw new Error("Invalid signup response");
+      }
+
       localStorage.setItem("token", res.data.token);
       localStorage.setItem("user", JSON.stringify(res.data.data));
 
       return res.data.data;
     } catch (err) {
       return rejectWithValue(
-        err.response?.data?.message || "Signup failed"
+        err.response?.data?.message || err.message || "Signup failed"
       );
     }
   }
@@ -28,16 +32,18 @@ export const loginUser = createAsyncThunk(
   async (formData, { rejectWithValue }) => {
     try {
       const res = await api.post("/api/login", formData);
-      console.log("FULL LOGIN RESPONSE:", res.data);
-      console.log("TOKEN:", res.data.token);
-      console.log("USER:", res.data.data);
+
+      if (!res.data?.token || !res.data?.data) {
+        throw new Error("Invalid login response");
+      }
+
       localStorage.setItem("token", res.data.token);
       localStorage.setItem("user", JSON.stringify(res.data.data));
 
       return res.data.data;
     } catch (err) {
       return rejectWithValue(
-        err.response?.data?.message || "Login failed"
+        err.response?.data?.message || err.message || "Login failed"
       );
     }
   }
@@ -53,15 +59,21 @@ export const logoutUser = createAsyncThunk(
   }
 );
 
-/* ================= INITIAL STATE ================= */
+/* ================= SAFE INITIAL STATE ================= */
 
-const storedUser = localStorage.getItem("user");
+let storedUser = null;
+try {
+  const raw = localStorage.getItem("user");
+  storedUser = raw && raw !== "undefined" ? JSON.parse(raw) : null;
+} catch {
+  storedUser = null;
+}
 
 const authSlice = createSlice({
   name: "auth",
   initialState: {
-    user: storedUser ? JSON.parse(storedUser) : null,
-    isAuthenticated: !!localStorage.getItem("token"),
+    user: storedUser,
+    isAuthenticated: !!storedUser,
     loading: false,
     error: null
   },
@@ -82,6 +94,7 @@ const authSlice = createSlice({
       .addCase(loginUser.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+        state.user = null;
         state.isAuthenticated = false;
       })
 
